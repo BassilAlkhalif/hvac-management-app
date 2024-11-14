@@ -115,31 +115,24 @@ def dashboard():
         completed_jobs = Job.query.filter_by(job_status='completed').count()
         pending_jobs = total_jobs - completed_jobs
 
+        technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
+        technician_names = [data[0] for data in technician_data]
+        technician_counts = [data[1] for data in technician_data]
+
         stats = {
             "total_jobs": total_jobs,
             "completed_jobs": completed_jobs,
-            "pending_jobs": pending_jobs
+            "pending_jobs": pending_jobs,
+            "technician_names": technician_names,
+            "technician_counts": technician_counts
         }
+
         return render_template('dashboard.html', stats=stats)
     except Exception as e:
         flash(f"Error loading dashboard: {str(e)}", "danger")
         return redirect(url_for('home'))
 
-# View All Jobs Route
-@app.route('/view_jobs')
-def view_jobs():
-    jobs = Job.query.all()
-    return render_template('view_jobs.html', jobs=jobs)
-
-# Job Details Route
-@app.route('/job_details/<int:job_id>')
-def job_details(job_id):
-    job = Job.query.get(job_id)
-    if not job:
-        flash("Job not found!", "danger")
-        return redirect(url_for('view_jobs'))
-    return render_template('job_details.html', job=job)
-
 # Run the Application
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+
