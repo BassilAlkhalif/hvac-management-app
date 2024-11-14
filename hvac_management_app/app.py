@@ -129,6 +129,43 @@ def perform_job(job_id):
 
     return render_template('perform_job.html', job=job)
 
+# View All Jobs Route
+@app.route('/view_jobs')
+def view_jobs():
+    try:
+        jobs = Job.query.all()
+        return render_template('view_jobs.html', jobs=jobs)
+    except Exception as e:
+        logging.error(f"An error occurred in view_jobs: {str(e)}")
+        flash(f"An error occurred: {str(e)}", "danger")
+        return redirect(url_for('home'))
+
+# Dashboard Route
+@app.route('/dashboard')
+def dashboard():
+    try:
+        total_jobs = Job.query.count()
+        completed_jobs = Job.query.filter_by(job_status='completed').count()
+        pending_jobs = total_jobs - completed_jobs
+
+        technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
+        technician_names = [data[0] for data in technician_data]
+        technician_counts = [data[1] for data in technician_data]
+
+        stats = {
+            "total_jobs": total_jobs,
+            "completed_jobs": completed_jobs,
+            "pending_jobs": pending_jobs,
+            "technician_names": technician_names,
+            "technician_counts": technician_counts
+        }
+
+        return render_template('dashboard.html', stats=stats)
+    except Exception as e:
+        logging.error(f"Error loading dashboard: {str(e)}")
+        flash(f"Error loading dashboard: {str(e)}", "danger")
+        return redirect(url_for('home'))
+
 # Job Details Route
 @app.route('/job_details/<int:job_id>')
 def job_details(job_id):
