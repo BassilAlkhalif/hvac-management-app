@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perform Job</title>
+</head>
+<body>
+<h1>Perform Job</h1>
+
+<form action="/perform_job" method="post" enctype="multipart/form-data">
+    <label for="job_id">Select Job:</label>
+    <select name="job_id" id="job_id" required>
+        {% for job in jobs %}
+            <option value="{{ job.id }}">{{ job.customer_name }} - {{ job.job_type }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    <label for="photo_type">Photo Type:</label>
+    <select name="photo_type" id="photo_type" required>
+        <option value="before">Before</option>
+        <option value="after">After</option>
+    </select><br><br>
+
+    <input type="file" name="file" required><br><br>
+    <button type="submit">Upload and Complete Job</button>
+</form>
+
+<br>
+<a href="/">Back to Dashboard</a>
+</body>
+</html>
