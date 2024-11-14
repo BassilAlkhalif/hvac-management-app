@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from flask import flash
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
@@ -50,7 +51,7 @@ def create_job():
         technician_name = request.form.get('technician_name')
         job_type = request.form.get('job_type')
         if job_type in ["Repair", "Maintenance"]:
-            job_type = "Maintenance"  # Combine Repair and Maintenance
+            job_type = "Maintenance"
         scheduled_date = request.form.get('scheduled_date')
 
         try:
@@ -63,11 +64,11 @@ def create_job():
             )
             db.session.add(new_job)
             db.session.commit()
+            flash("New job added successfully!", "success")
             return redirect(url_for('home'))
         except Exception as e:
-            return jsonify({"error": f"Job creation failed: {str(e)}"}), 500
-
-    # If the request method is GET, render the create_job.html form
+            flash(f"Error: {str(e)}", "danger")
+            return redirect(url_for('home'))
     return render_template('create_job.html')
 
 # Perform Job Route
