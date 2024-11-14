@@ -14,7 +14,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "123456"
 
-# Path for uploads folder (inside 'static' for Flask static file serving)
+# Path for uploads folder
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB file size limit
@@ -85,43 +85,33 @@ def perform_job(job_id):
 
     try:
         if request.method == 'POST':
+            before_photo = request.files.get('before_photo')
+            after_photo = request.files.get('after_photo')
+            comment = request.form.get('comment')
+
             # Handle Before Photo Upload
-            if 'upload_before' in request.form:
-                before_photo = request.files['before_photo']
-                if before_photo:
-                    filename = f"{job_id}_before_{int(time.time())}_{secure_filename(before_photo.filename)}"
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    before_photo.save(filepath)
-                    logging.debug(f"Before photo saved at: {filepath}")
-                    if os.path.exists(filepath):
-                        logging.debug("Before photo file exists.")
-                    else:
-                        logging.error("Before photo file does not exist after saving.")
-                    job.before_photo = filename
-                    db.session.commit()
-                    flash("Before photo uploaded successfully!", "success")
-                    return redirect(url_for('perform_job', job_id=job_id))
+            if before_photo:
+                before_filename = f"{job_id}_before_{int(time.time())}_{secure_filename(before_photo.filename)}"
+                before_filepath = os.path.join(app.config['UPLOAD_FOLDER'], before_filename)
+                before_photo.save(before_filepath)
+                job.before_photo = before_filename
+                logging.debug(f"Before photo saved at: {before_filepath}")
 
             # Handle After Photo Upload
-            elif 'upload_after' in request.form:
-                after_photo = request.files['after_photo']
-                comment = request.form.get('comment')
-                if after_photo:
-                    filename = f"{job_id}_after_{int(time.time())}_{secure_filename(after_photo.filename)}"
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    after_photo.save(filepath)
-                    logging.debug(f"After photo saved at: {filepath}")
-                    if os.path.exists(filepath):
-                        logging.debug("After photo file exists.")
-                    else:
-                        logging.error("After photo file does not exist after saving.")
-                    job.after_photo = filename
-                    job.notes = comment
-                    job.job_status = 'completed'
-                    job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    db.session.commit()
-                    flash("Job completed successfully!", "success")
-                    return redirect(url_for('home'))
+            if after_photo:
+                after_filename = f"{job_id}_after_{int(time.time())}_{secure_filename(after_photo.filename)}"
+                after_filepath = os.path.join(app.config['UPLOAD_FOLDER'], after_filename)
+                after_photo.save(after_filepath)
+                job.after_photo = after_filename
+                logging.debug(f"After photo saved at: {after_filepath}")
+
+            job.notes = comment
+            job.job_status = 'completed'
+            job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            db.session.commit()
+            flash("Job completed successfully!", "success")
+            return redirect(url_for('home'))
+
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")
         flash(f"An error occurred: {str(e)}", "danger")
@@ -169,19 +159,15 @@ def dashboard():
 # Job Details Route
 @app.route('/job_details/<int:job_id>')
 def job_details(job_id):
-    try:
-        job = Job.query.get(job_id)
-        if not job:
-            flash("Job not found!", "danger")
-            return redirect(url_for('view_jobs'))
-
-        before_photo_url = url_for('static', filename=f'uploads/{job.before_photo}') if job.before_photo else None
-        after_photo_url = url_for('static', filename=f'uploads/{job.after_photo}') if job.after_photo else None
-
-        return render_template('job_details.html', job=job, before_photo_url=before_photo_url, after_photo_url=after_photo_url)
-    except Exception as e:
-        flash(f"An error occurred: {str(e)}", "danger")
+    job = Job.query.get(job_id)
+    if not job:
+        flash("Job not found!", "danger")
         return redirect(url_for('view_jobs'))
+
+    before_photo_url = url_for('static', filename=f'uploads/{job.before_photo}') if job.before_photo else None
+    after_photo_url = url_for('static', filename=f'uploads/{job.after_photo}') if job.after_photo else None
+
+    return render_template('job_details.html', job=job, before_photo_url=before_photo_url, after_photo_url=after_photo_url)
 
 # Run the Application
 if __name__ == '__main__':
