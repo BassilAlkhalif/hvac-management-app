@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HVAC Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>HVAC Management Dashboard</h1>
+
+<h2>Job Statistics</h2>
+<p>Total Jobs: {{ stats.total_jobs }}</p>
+<p>Completed Jobs: {{ stats.completed_jobs }}</p>
+<p>Pending Jobs: {{ stats.pending_jobs }}</p>
+
+<!-- Job Completion Pie Chart -->
+<canvas id="completionChart" width="400" height="200"></canvas>
+
+<!-- Technician Performance Bar Chart -->
+<canvas id="technicianChart" width="400" height="200"></canvas>
+
+<script>
+// Job Completion Data
+const completionData = {
+    labels: ['Completed', 'Pending'],
+    datasets: [{
+        data: [{{ stats.completed_jobs }}, {{ stats.pending_jobs }}],
+        backgroundColor: ['#4caf50', '#f44336']
+    }]
+};
+
+// Technician Performance Data
+const technicianData = {
+    labels: {{ stats.technician_names | safe }},
+    datasets: [{
+        label: 'Jobs Completed',
+        data: {{ stats.technician_counts | safe }},
+        backgroundColor: '#2196f3'
+    }]
+};
+
+// Render Job Completion Pie Chart
+const completionCtx = document.getElementById('completionChart').getContext('2d');
+new Chart(completionCtx, {
+    type: 'pie',
+    data: completionData
+});
+
+// Render Technician Performance Bar Chart
+const technicianCtx = document.getElementById('technicianChart').getContext('2d');
+new Chart(technicianCtx, {
+    type: 'bar',
+    data: technicianData,
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+
+<br>
+<a href="/">Back to Home</a>
+</body>
+</html>
