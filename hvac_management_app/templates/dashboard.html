@@ -14,14 +14,16 @@
 <p>Completed Jobs: {{ stats.completed_jobs }}</p>
 <p>Pending Jobs: {{ stats.pending_jobs }}</p>
 
-<!-- Job Completion Pie Chart -->
-<canvas id="completionChart" width="400" height="200"></canvas>
-
-<!-- Technician Performance Bar Chart -->
-<canvas id="technicianChart" width="400" height="200"></canvas>
+<div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+    <div style="width: 45%; padding: 10px;">
+        <canvas id="completionChart"></canvas>
+    </div>
+    <div style="width: 45%; padding: 10px;">
+        <canvas id="technicianChart"></canvas>
+    </div>
+</div>
 
 <script>
-// Job Completion Data
 const completionData = {
     labels: ['Completed', 'Pending'],
     datasets: [{
@@ -30,7 +32,6 @@ const completionData = {
     }]
 };
 
-// Technician Performance Data
 const technicianData = {
     labels: {{ stats.technician_names | safe }},
     datasets: [{
@@ -40,16 +41,12 @@ const technicianData = {
     }]
 };
 
-// Render Job Completion Pie Chart
-const completionCtx = document.getElementById('completionChart').getContext('2d');
-new Chart(completionCtx, {
+new Chart(document.getElementById('completionChart').getContext('2d'), {
     type: 'pie',
     data: completionData
 });
 
-// Render Technician Performance Bar Chart
-const technicianCtx = document.getElementById('technicianChart').getContext('2d');
-new Chart(technicianCtx, {
+new Chart(document.getElementById('technicianChart').getContext('2d'), {
     type: 'bar',
     data: technicianData,
     options: {
@@ -66,3 +63,4 @@ new Chart(technicianCtx, {
 <a href="/">Back to Home</a>
 </body>
 </html>
+
