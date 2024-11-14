@@ -53,22 +53,30 @@ def create_job():
         job_type = request.form.get('job_type')
         scheduled_date = request.form.get('scheduled_date')
 
-        new_job = Job(
-            customer_name=customer_name,
-            technician_name=technician_name,
-            job_type=job_type,
-            scheduled_date=scheduled_date
-        )
-        db.session.add(new_job)
-        db.session.commit()
-        flash("New job added successfully!", "success")
-        return redirect(url_for('home'))
+        try:
+            new_job = Job(
+                customer_name=customer_name,
+                technician_name=technician_name,
+                job_type=job_type,
+                scheduled_date=scheduled_date
+            )
+            db.session.add(new_job)
+            db.session.commit()
+            flash("New job added successfully!", "success")
+            return redirect(url_for('home'))
+        except Exception as e:
+            flash(f"Error: {str(e)}", "danger")
+            return redirect(url_for('home'))
     return render_template('create_job.html')
 
 # Perform Job Route
 @app.route('/perform_job/<int:job_id>', methods=['GET', 'POST'])
 def perform_job(job_id):
     job = Job.query.get(job_id)
+
+    if not job:
+        flash("Job not found!", "danger")
+        return redirect(url_for('home'))
 
     if request.method == 'POST':
         if 'upload_before' in request.form:
@@ -99,6 +107,24 @@ def perform_job(job_id):
 
     return render_template('perform_job.html', job=job)
 
+# Dashboard Route
+@app.route('/dashboard')
+def dashboard():
+    try:
+        total_jobs = Job.query.count()
+        completed_jobs = Job.query.filter_by(job_status='completed').count()
+        pending_jobs = total_jobs - completed_jobs
+
+        stats = {
+            "total_jobs": total_jobs,
+            "completed_jobs": completed_jobs,
+            "pending_jobs": pending_jobs
+        }
+        return render_template('dashboard.html', stats=stats)
+    except Exception as e:
+        flash(f"Error loading dashboard: {str(e)}", "danger")
+        return redirect(url_for('home'))
+
 # View All Jobs Route
 @app.route('/view_jobs')
 def view_jobs():
@@ -109,6 +135,9 @@ def view_jobs():
 @app.route('/job_details/<int:job_id>')
 def job_details(job_id):
     job = Job.query.get(job_id)
+    if not job:
+        flash("Job not found!", "danger")
+        return redirect(url_for('view_jobs'))
     return render_template('job_details.html', job=job)
 
 # Run the Application
