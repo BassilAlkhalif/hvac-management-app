@@ -4,23 +4,64 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Perform Job</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+        padding: 20px;
+    }
+    .container {
+        max-width: 600px;
+        margin: auto;
+        background-color: #fff;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+    }
+    h1 {
+        color: #333;
+        text-align: center;
+    }
+    label {
+        display: block;
+        margin-top: 10px;
+        color: #555;
+    }
+    input[type="file"],
+    textarea,
+    button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+    }
+    button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+</style>
 </head>
 <body>
-<h1>Perform Job (ID: {{ job.id }})</h1>
+<div class="container">
+    <h1>Perform Job (ID: {{ job.id }})</h1>
+    <form method="post" enctype="multipart/form-data">
+        <label for="before_photo">Upload Before Photo:</label>
+        <input type="file" name="before_photo" id="before_photo">
 
-<form method="POST" enctype="multipart/form-data">
-    <label for="before_photo">Upload Before Photo:</label>
-    <input type="file" name="before_photo" required>
-    <button type="submit" name="upload_before">Upload Before Photo</button>
-</form>
+        <label for="after_photo">Upload After Photo:</label>
+        <input type="file" name="after_photo" id="after_photo">
 
-<form method="POST" enctype="multipart/form-data">
-    <label for="after_photo">Upload After Photo:</label>
-    <input type="file" name="after_photo" required><br><br>
-    <textarea name="comment" placeholder="Add your comment here..."></textarea>
-    <button type="submit" name="upload_after">Upload After Photo and Complete Job</button>
-</form>
+        <label for="comment">Notes:</label>
+        <textarea name="comment" id="comment" placeholder="Enter any notes..."></textarea>
 
-<a href="/">Back to Dashboard</a>
+        <button type="submit">Upload Both Photos & Complete</button>
+    </form>
+</div>
 </body>
 </html>
