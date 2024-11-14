@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>View All Jobs</title>
+</head>
+<body>
+<h1>All Jobs</h1>
+<table border="1">
+    <tr>
+        <th>Job ID</th>
+        <th>Customer Name</th>
+        <th>Technician Name</th>
+        <th>Job Type</th>
+        <th>Status</th>
+        <th>Scheduled Date</th>
+        <th>Completion Time</th>
+        <th>Actions</th>
+    </tr>
+    {% for job in jobs %}
+    <tr>
+        <td>{{ job.id }}</td>
+        <td>{{ job.customer_name }}</td>
+        <td>{{ job.technician_name }}</td>
+        <td>{{ job.job_type }}</td>
+        <td>{{ job.job_status }}</td>
+        <td>{{ job.scheduled_date }}</td>
+        <td>{{ job.completion_time }}</td>
+        <td><a href="{{ url_for('job_details', job_id=job.id) }}">View Details</a></td>
+    </tr>
+    {% endfor %}
+</table>
+<br>
+<a href="/">Back to Dashboard</a>
+</body>
+</html>
