@@ -2,19 +2,20 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Use an absolute path for the uploads folder
+# Absolute path for uploads folder
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB limit
 
 db = SQLAlchemy(app)
 
-# Ensure the uploads directory exists
+# Ensure uploads folder exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -28,19 +29,13 @@ class Job(db.Model):
     scheduled_date = db.Column(db.String(50))
     before_photo = db.Column(db.String(200))
     after_photo = db.Column(db.String(200))
+    completion_time = db.Column(db.String(50))
+    notes = db.Column(db.String(500))
 
-# Initialize the database and add dummy jobs for testing
+# Initialize the database
 if not os.path.exists('hvac_management.db'):
     with app.app_context():
         db.create_all()
-        if Job.query.count() == 0:  # Only add dummy jobs if the table is empty
-            dummy_jobs = [
-                Job(customer_name="Alice", technician_name="John", job_type="Installation", job_status="scheduled", scheduled_date="2024-11-15"),
-                Job(customer_name="Bob", technician_name="Jane", job_type="Maintenance", job_status="scheduled", scheduled_date="2024-11-16"),
-                Job(customer_name="Charlie", technician_name="Mike", job_type="Repair", job_status="scheduled", scheduled_date="2024-11-17"),
-            ]
-            db.session.add_all(dummy_jobs)
-            db.session.commit()
 
 # Home Route
 @app.route('/')
@@ -48,12 +43,14 @@ def home():
     jobs = Job.query.filter_by(job_status="scheduled").all()
     return render_template('index.html', jobs=jobs)
 
-# Create Job Route
+# Create New Job Route
 @app.route('/create_job', methods=['POST'])
 def create_job():
     customer_name = request.form.get('customer_name')
     technician_name = request.form.get('technician_name')
     job_type = request.form.get('job_type')
+    if job_type == "Repair":
+        job_type = "Maintenance"  # Combine Repair and Maintenance
     scheduled_date = request.form.get('scheduled_date')
 
     try:
@@ -70,12 +67,13 @@ def create_job():
     except Exception as e:
         return jsonify({"error": f"Job creation failed: {str(e)}"}), 500
 
-# Upload Photo Route
-@app.route('/upload', methods=['POST'])
-def upload_photo():
+# Complete Job Route
+@app.route('/complete_job', methods=['POST'])
+def complete_job():
     job_id = request.form.get('job_id')
     photo_type = request.form.get('photo_type')
     file = request.files['file']
+    notes = request.form.get('notes')
 
     if file and photo_type in ['before', 'after']:
         filename = secure_filename(file.filename)
@@ -84,7 +82,7 @@ def upload_photo():
         try:
             file.save(filepath)
             job = Job.query.get(job_id)
-            
+
             if not job:
                 return jsonify({"error": f"Job with ID {job_id} not found"}), 404
 
@@ -93,12 +91,30 @@ def upload_photo():
             else:
                 job.after_photo = filepath
 
+            job.job_status = 'completed'
+            job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            job.notes = notes
+
             db.session.commit()
-            return jsonify({"message": f"{photo_type.capitalize()} photo uploaded successfully", "path": filepath})
+            return jsonify({"message": f"Job {job_id} marked as completed with {photo_type} photo uploaded", "path": filepath})
         except Exception as e:
             return jsonify({"error": f"File upload failed: {str(e)}"}), 500
 
     return jsonify({"error": "Invalid upload"}), 400
+
+# View All Jobs Route
+@app.route('/view_jobs')
+def view_jobs():
+    jobs = Job.query.all()
+    return render_template('view_jobs.html', jobs=jobs)
+
+# Job Details Route
+@app.route('/job_details/<int:job_id>')
+def job_details(job_id):
+    job = Job.query.get(job_id)
+    if not job:
+        return jsonify({"error": f"Job with ID {job_id} not found"}), 404
+    return render_template('job_details.html', job=job)
 
 # Run the Application
 if __name__ == '__main__':
