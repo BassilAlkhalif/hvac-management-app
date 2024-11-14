@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
+import time
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
@@ -84,7 +85,7 @@ def perform_job(job_id):
             if 'upload_before' in request.form:
                 before_photo = request.files['before_photo']
                 if before_photo:
-                    filename = secure_filename(before_photo.filename)
+                    filename = f"{job_id}_before_{int(time.time())}_{secure_filename(before_photo.filename)}"
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     before_photo.save(filepath)
                     job.before_photo = filename
@@ -97,7 +98,7 @@ def perform_job(job_id):
                 after_photo = request.files['after_photo']
                 comment = request.form.get('comment')
                 if after_photo:
-                    filename = secure_filename(after_photo.filename)
+                    filename = f"{job_id}_after_{int(time.time())}_{secure_filename(after_photo.filename)}"
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     after_photo.save(filepath)
                     job.after_photo = filename
@@ -156,7 +157,11 @@ def job_details(job_id):
         if not job:
             flash("Job not found!", "danger")
             return redirect(url_for('view_jobs'))
-        return render_template('job_details.html', job=job)
+
+        before_photo_url = url_for('static', filename=f'uploads/{job.before_photo}') if job.before_photo else None
+        after_photo_url = url_for('static', filename=f'uploads/{job.after_photo}') if job.after_photo else None
+
+        return render_template('job_details.html', job=job, before_photo_url=before_photo_url, after_photo_url=after_photo_url)
     except Exception as e:
         flash(f"An error occurred: {str(e)}", "danger")
         return redirect(url_for('view_jobs'))
