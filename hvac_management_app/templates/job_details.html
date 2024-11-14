@@ -17,10 +17,16 @@
 <p>Notes: {{ job.notes }}</p>
 
 <h3>Photos</h3>
-<p>Before Photo: <a href="{{ url_for('static', filename='uploads/' + job.before_photo) }}" target="_blank">
-    <img src="{{ url_for('static', filename='uploads/' + job.before_photo) }}" width="150"></a></p>
-<p>After Photo: <a href="{{ url_for('static', filename='uploads/' + job.after_photo) }}" target="_blank">
-    <img src="{{ url_for('static', filename='uploads/' + job.after_photo) }}" width="150"></a></p>
+<p>Before Photo: 
+    <a href="{{ url_for('static', filename='uploads/' + job.before_photo) }}" target="_blank">
+        <img src="{{ url_for('static', filename='uploads/' + job.before_photo) }}" width="150">
+    </a>
+</p>
+<p>After Photo: 
+    <a href="{{ url_for('static', filename='uploads/' + job.after_photo) }}" target="_blank">
+        <img src="{{ url_for('static', filename='uploads/' + job.after_photo) }}" width="150">
+    </a>
+</p>
 
 <a href="/">Back to Dashboard</a>
 </body>
