@@ -37,11 +37,10 @@ if not os.path.exists('hvac_management.db'):
     with app.app_context():
         db.create_all()
 
-# Home Route
+# Home Route (Navigation)
 @app.route('/')
 def home():
-    jobs = Job.query.filter_by(job_status="scheduled").all()
-    return render_template('index.html', jobs=jobs)
+    return render_template('index.html')
 
 # Create New Job Route
 @app.route('/create_job', methods=['POST'])
@@ -49,7 +48,7 @@ def create_job():
     customer_name = request.form.get('customer_name')
     technician_name = request.form.get('technician_name')
     job_type = request.form.get('job_type')
-    if job_type == "Repair":
+    if job_type in ["Repair", "Maintenance"]:
         job_type = "Maintenance"  # Combine Repair and Maintenance
     scheduled_date = request.form.get('scheduled_date')
 
@@ -67,40 +66,64 @@ def create_job():
     except Exception as e:
         return jsonify({"error": f"Job creation failed: {str(e)}"}), 500
 
-# Complete Job Route
-@app.route('/complete_job', methods=['POST'])
-def complete_job():
-    job_id = request.form.get('job_id')
-    photo_type = request.form.get('photo_type')
-    file = request.files['file']
-    notes = request.form.get('notes')
+# Perform Job Route
+@app.route('/perform_job', methods=['GET', 'POST'])
+def perform_job():
+    if request.method == 'POST':
+        job_id = request.form.get('job_id')
+        photo_type = request.form.get('photo_type')
+        file = request.files['file']
 
-    if file and photo_type in ['before', 'after']:
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if file and photo_type in ['before', 'after']:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
-        try:
-            file.save(filepath)
-            job = Job.query.get(job_id)
+            try:
+                file.save(filepath)
+                job = Job.query.get(job_id)
 
-            if not job:
-                return jsonify({"error": f"Job with ID {job_id} not found"}), 404
+                if not job:
+                    return jsonify({"error": f"Job with ID {job_id} not found"}), 404
 
-            if photo_type == 'before':
-                job.before_photo = filepath
-            else:
-                job.after_photo = filepath
+                if photo_type == 'before':
+                    job.before_photo = filepath
+                else:
+                    job.after_photo = filepath
 
-            job.job_status = 'completed'
-            job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            job.notes = notes
+                if job.before_photo and job.after_photo:
+                    job.job_status = 'completed'
+                    job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            db.session.commit()
-            return jsonify({"message": f"Job {job_id} marked as completed with {photo_type} photo uploaded", "path": filepath})
-        except Exception as e:
-            return jsonify({"error": f"File upload failed: {str(e)}"}), 500
+                db.session.commit()
+                return redirect(url_for('home'))
+            except Exception as e:
+                return jsonify({"error": f"File upload failed: {str(e)}"}), 500
 
-    return jsonify({"error": "Invalid upload"}), 400
+        return jsonify({"error": "Invalid upload"}), 400
+
+    jobs = Job.query.filter_by(job_status="scheduled").all()
+    return render_template('perform_jobs.html', jobs=jobs)
+
+# Dashboard Route
+@app.route('/dashboard')
+def dashboard():
+    total_jobs = Job.query.count()
+    completed_jobs = Job.query.filter_by(job_status='completed').count()
+    pending_jobs = total_jobs - completed_jobs
+
+    technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
+    technician_names = [data[0] for data in technician_data]
+    technician_counts = [data[1] for data in technician_data]
+
+    stats = {
+        "total_jobs": total_jobs,
+        "completed_jobs": completed_jobs,
+        "pending_jobs": pending_jobs,
+        "technician_names": technician_names,
+        "technician_counts": technician_counts
+    }
+
+    return render_template('dashboard.html', stats=stats)
 
 # View All Jobs Route
 @app.route('/view_jobs')
@@ -112,35 +135,7 @@ def view_jobs():
 @app.route('/job_details/<int:job_id>')
 def job_details(job_id):
     job = Job.query.get(job_id)
-    if not job:
-        return jsonify({"error": f"Job with ID {job_id} not found"}), 404
     return render_template('job_details.html', job=job)
-
-# Dashboard Route
-@app.route('/dashboard')
-def dashboard():
-    # Get total job count
-    total_jobs = Job.query.count()
-
-    # Get count of completed and pending jobs
-    completed_jobs = Job.query.filter_by(job_status='completed').count()
-    pending_jobs = total_jobs - completed_jobs
-
-    # Get job count per technician
-    technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
-    technician_names = [data[0] for data in technician_data]
-    technician_counts = [data[1] for data in technician_data]
-
-    # Data for charts
-    stats = {
-        "total_jobs": total_jobs,
-        "completed_jobs": completed_jobs,
-        "pending_jobs": pending_jobs,
-        "technician_names": technician_names,
-        "technician_counts": technician_counts
-    }
-
-    return render_template('dashboard.html', stats=stats)
 
 # Run the Application
 if __name__ == '__main__':
