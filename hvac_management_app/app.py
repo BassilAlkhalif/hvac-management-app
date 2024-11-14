@@ -80,44 +80,6 @@ def perform_job(job_id):
 
     try:
         if request.method == 'POST':
-            after_photo = request.files['after_photo']
-            comment = request.form.get('comment')
-            if after_photo:
-                filename = secure_filename(after_photo.filename)
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                after_photo.save(filepath)
-                job.after_photo = filename
-                job.notes = comment
-                job.job_status = 'completed'
-                job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                db.session.commit()
-                flash("Job completed successfully!", "success")
-                return redirect(url_for('home'))
-
-        return render_template('perform_job.html', job=job)
-    except Exception as e:
-        flash(f"An error occurred: {str(e)}", "danger")
-        return redirect(url_for('home'))
-
-# Job Details Route
-@app.route('/job_details/<int:job_id>')
-def job_details(job_id):
-    job = Job.query.get(job_id)
-    if not job:
-        flash("Job not found!", "danger")
-        return redirect(url_for('view_jobs'))
-    return render_template('job_details.html', job=job)
-
-# View All Jobs Route
-@app.route('/view_jobs')
-def view_jobs():
-    try:
-        jobs = Job.query.all()
-        return render_template('view_jobs.html', jobs=jobs)
-    except Exception as e:
-        flash(f"An error occurred: {str(e)}", "danger")
-        return redirect(url_for('home'))
-
-# Run the Application
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+            if 'upload_before' in request.form:
+                before_photo = request.files['before_photo']
+     
