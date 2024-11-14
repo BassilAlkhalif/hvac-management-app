@@ -4,39 +4,90 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Job Details</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+        padding: 20px;
+    }
+    .container {
+        max-width: 800px;
+        margin: auto;
+        background-color: #fff;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+    }
+    h1, h3 {
+        color: #333;
+    }
+    p {
+        font-size: 16px;
+        color: #555;
+    }
+    .photo-section {
+        margin-top: 20px;
+    }
+    .photo {
+        width: 200px;
+        height: auto;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .no-photo {
+        color: #888;
+        font-style: italic;
+    }
+    .back-link {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 5px;
+    }
+    .back-link:hover {
+        background-color: #0056b3;
+    }
+</style>
 </head>
 <body>
-<h1>Job Details (ID: {{ job.id }})</h1>
+<div class="container">
+    <h1>Job Details (ID: {{ job.id }})</h1>
 
-<p><strong>Customer Name:</strong> {{ job.customer_name }}</p>
-<p><strong>Technician Name:</strong> {{ job.technician_name }}</p>
-<p><strong>Job Type:</strong> {{ job.job_type }}</p>
-<p><strong>Status:</strong> {{ job.job_status }}</p>
-<p><strong>Scheduled Date:</strong> {{ job.scheduled_date }}</p>
-<p><strong>Completion Time:</strong> {{ job.completion_time }}</p>
-<p><strong>Notes:</strong> {{ job.notes }}</p>
+    <p><strong>Customer Name:</strong> {{ job.customer_name }}</p>
+    <p><strong>Technician Name:</strong> {{ job.technician_name }}</p>
+    <p><strong>Job Type:</strong> {{ job.job_type }}</p>
+    <p><strong>Status:</strong> {{ job.job_status }}</p>
+    <p><strong>Scheduled Date:</strong> {{ job.scheduled_date }}</p>
+    <p><strong>Completion Time:</strong> {{ job.completion_time }}</p>
+    <p><strong>Notes:</strong> {{ job.notes }}</p>
 
-<h3>Photos</h3>
+    <div class="photo-section">
+        <h3>Photos</h3>
 
-<p><strong>Before Photo:</strong></p>
-{% if job.before_photo %}
-    <a href="{{ url_for('static', filename='uploads/' + job.before_photo) }}" target="_blank">
-        <img src="{{ url_for('static', filename='uploads/' + job.before_photo) }}" alt="Before Photo" style="width: 200px; height: auto;">
-    </a>
-{% else %}
-    <p>No before photo uploaded.</p>
-{% endif %}
+        <p><strong>Before Photo:</strong></p>
+        {% if before_photo_url %}
+            <a href="{{ before_photo_url }}" target="_blank">
+                <img src="{{ before_photo_url }}" alt="Before Photo" class="photo">
+            </a>
+        {% else %}
+            <p class="no-photo">No before photo uploaded.</p>
+        {% endif %}
 
-<p><strong>After Photo:</strong></p>
-{% if job.after_photo %}
-    <a href="{{ url_for('static', filename='uploads/' + job.after_photo) }}" target="_blank">
-        <img src="{{ url_for('static', filename='uploads/' + job.after_photo) }}" alt="After Photo" style="width: 200px; height: auto;">
-    </a>
-{% else %}
-    <p>No after photo uploaded.</p>
-{% endif %}
+        <p><strong>After Photo:</strong></p>
+        {% if after_photo_url %}
+            <a href="{{ after_photo_url }}" target="_blank">
+                <img src="{{ after_photo_url }}" alt="After Photo" class="photo">
+            </a>
+        {% else %}
+            <p class="no-photo">No after photo uploaded.</p>
+        {% endif %}
+    </div>
 
-<br>
-<a href="/">Back to Dashboard</a>
+    <a href="{{ url_for('home') }}" class="back-link">Back to Dashboard</a>
+</div>
 </body>
 </html>
