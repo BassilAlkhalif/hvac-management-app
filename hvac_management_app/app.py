@@ -53,20 +53,16 @@ def create_job():
         job_type = request.form.get('job_type')
         scheduled_date = request.form.get('scheduled_date')
 
-        try:
-            new_job = Job(
-                customer_name=customer_name,
-                technician_name=technician_name,
-                job_type=job_type,
-                scheduled_date=scheduled_date
-            )
-            db.session.add(new_job)
-            db.session.commit()
-            flash("New job added successfully!", "success")
-            return redirect(url_for('home'))
-        except Exception as e:
-            flash(f"Error: {str(e)}", "danger")
-            return redirect(url_for('home'))
+        new_job = Job(
+            customer_name=customer_name,
+            technician_name=technician_name,
+            job_type=job_type,
+            scheduled_date=scheduled_date
+        )
+        db.session.add(new_job)
+        db.session.commit()
+        flash("New job added successfully!", "success")
+        return redirect(url_for('home'))
     return render_template('create_job.html')
 
 # Perform Job Route
@@ -103,7 +99,13 @@ def perform_job(job_id):
 
     return render_template('perform_job.html', job=job)
 
-# View Job Details Route
+# View All Jobs Route
+@app.route('/view_jobs')
+def view_jobs():
+    jobs = Job.query.all()
+    return render_template('view_jobs.html', jobs=jobs)
+
+# Job Details Route
 @app.route('/job_details/<int:job_id>')
 def job_details(job_id):
     job = Job.query.get(job_id)
