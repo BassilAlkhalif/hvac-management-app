@@ -10,7 +10,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "123456"
 
 # Absolute path for uploads folder
-UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'static/uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB limit
 
@@ -80,70 +80,21 @@ def perform_job(job_id):
 
     try:
         if request.method == 'POST':
-            if 'upload_before' in request.form:
-                before_photo = request.files['before_photo']
-                if before_photo:
-                    filename = secure_filename(before_photo.filename)
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    before_photo.save(filepath)
-                    job.before_photo = filename
-                    db.session.commit()
-                    flash("Before photo uploaded successfully!", "success")
-                    return redirect(url_for('perform_job', job_id=job_id))
-
-            elif 'upload_after' in request.form:
-                after_photo = request.files['after_photo']
-                comment = request.form.get('comment')
-                if after_photo:
-                    filename = secure_filename(after_photo.filename)
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    after_photo.save(filepath)
-                    job.after_photo = filename
-                    job.notes = comment
-                    job.job_status = 'completed'
-                    job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    db.session.commit()
-                    flash("Job completed successfully!", "success")
-                    return redirect(url_for('home'))
+            after_photo = request.files['after_photo']
+            comment = request.form.get('comment')
+            if after_photo:
+                filename = secure_filename(after_photo.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                after_photo.save(filepath)
+                job.after_photo = filename
+                job.notes = comment
+                job.job_status = 'completed'
+                job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                db.session.commit()
+                flash("Job completed successfully!", "success")
+                return redirect(url_for('home'))
 
         return render_template('perform_job.html', job=job)
-    except Exception as e:
-        flash(f"An error occurred: {str(e)}", "danger")
-        return redirect(url_for('home'))
-
-# Dashboard Route
-@app.route('/dashboard')
-def dashboard():
-    try:
-        total_jobs = Job.query.count()
-        completed_jobs = Job.query.filter_by(job_status='completed').count()
-        pending_jobs = total_jobs - completed_jobs
-
-        technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
-        technician_names = [data[0] for data in technician_data]
-        technician_counts = [data[1] for data in technician_data]
-
-        stats = {
-            "total_jobs": total_jobs,
-            "completed_jobs": completed_jobs,
-            "pending_jobs": pending_jobs,
-            "technician_names": technician_names,
-            "technician_counts": technician_counts
-        }
-
-        return render_template('dashboard.html', stats=stats)
-    except Exception as e:
-        flash(f"Error loading dashboard: {str(e)}", "danger")
-        return redirect(url_for('home'))
-
-# View All Jobs Route
-@app.route('/view_jobs')
-def view_jobs():
-    try:
-        jobs = Job.query.all()
-        if not jobs:
-            flash("No jobs found!", "info")
-        return render_template('view_jobs.html', jobs=jobs)
     except Exception as e:
         flash(f"An error occurred: {str(e)}", "danger")
         return redirect(url_for('home'))
@@ -156,6 +107,16 @@ def job_details(job_id):
         flash("Job not found!", "danger")
         return redirect(url_for('view_jobs'))
     return render_template('job_details.html', job=job)
+
+# View All Jobs Route
+@app.route('/view_jobs')
+def view_jobs():
+    try:
+        jobs = Job.query.all()
+        return render_template('view_jobs.html', jobs=jobs)
+    except Exception as e:
+        flash(f"An error occurred: {str(e)}", "danger")
+        return redirect(url_for('home'))
 
 # Run the Application
 if __name__ == '__main__':
