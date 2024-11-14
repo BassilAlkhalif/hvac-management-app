@@ -8,13 +8,10 @@
 <body>
 <h1>HVAC Management Dashboard</h1>
 
-<!-- Navigation Links -->
 <button onclick="location.href='/create_job'">Add Job</button>
-<button onclick="location.href='/perform_job'">Perform Job</button>
 <button onclick="location.href='/dashboard'">Dashboard</button>
 <button onclick="location.href='/view_jobs'">View/Edit Jobs</button>
 
-<!-- Pending Jobs Table -->
 <h2>Pending Jobs</h2>
 <table border="1">
     <tr>
@@ -23,6 +20,7 @@
         <th>Technician Name</th>
         <th>Job Type</th>
         <th>Scheduled Date</th>
+        <th>Actions</th>
     </tr>
     {% for job in jobs %}
     <tr>
@@ -31,6 +29,7 @@
         <td>{{ job.technician_name }}</td>
         <td>{{ job.job_type }}</td>
         <td>{{ job.scheduled_date }}</td>
+        <td><a href="{{ url_for('perform_job', job_id=job.id) }}">Perform Job</a></td>
     </tr>
     {% endfor %}
 </table>
