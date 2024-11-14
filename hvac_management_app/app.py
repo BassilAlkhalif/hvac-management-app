@@ -4,6 +4,12 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 import os
 
+# Create the uploads directory if it doesn't exist
+if not os.path.exists('uploads'):
+    os.makedirs('uploads')
+
+os.chmod('uploads', 0o777)  # Grants read, write, and execute permissions
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
