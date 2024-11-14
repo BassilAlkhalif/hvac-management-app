@@ -33,7 +33,6 @@
         height: auto;
         border: 1px solid #ddd;
         border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
     .no-photo {
         color: #888;
@@ -65,27 +64,25 @@
     <p><strong>Completion Time:</strong> {{ job.completion_time }}</p>
     <p><strong>Notes:</strong> {{ job.notes }}</p>
 
-    <div class="photo-section">
-        <h3>Photos</h3>
+    <h3>Photos</h3>
 
-        <p><strong>Before Photo:</strong></p>
-        {% if before_photo_url %}
-            <a href="{{ before_photo_url }}" target="_blank">
-                <img src="{{ before_photo_url }}" alt="Before Photo" class="photo">
-            </a>
-        {% else %}
-            <p class="no-photo">No before photo uploaded.</p>
-        {% endif %}
+    <p><strong>Before Photo:</strong></p>
+    {% if before_photo_url %}
+        <a href="{{ before_photo_url }}" target="_blank">
+            <img src="{{ before_photo_url }}" alt="Before Photo" class="photo">
+        </a>
+    {% else %}
+        <p class="no-photo">No before photo uploaded.</p>
+    {% endif %}
 
-        <p><strong>After Photo:</strong></p>
-        {% if after_photo_url %}
-            <a href="{{ after_photo_url }}" target="_blank">
-                <img src="{{ after_photo_url }}" alt="After Photo" class="photo">
-            </a>
-        {% else %}
-            <p class="no-photo">No after photo uploaded.</p>
-        {% endif %}
-    </div>
+    <p><strong>After Photo:</strong></p>
+    {% if after_photo_url %}
+        <a href="{{ after_photo_url }}" target="_blank">
+            <img src="{{ after_photo_url }}" alt="After Photo" class="photo">
+        </a>
+    {% else %}
+        <p class="no-photo">No after photo uploaded.</p>
+    {% endif %}
 
     <a href="{{ url_for('home') }}" class="back-link">Back to Dashboard</a>
 </div>
