@@ -1,0 +1,21 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HVAC Management</title>
+</head>
+<body>
+<h2>Upload Before/After Photo</h2>
+<form action="/upload" method="post" enctype="multipart/form-data">
+    <input type="text" name="job_id" placeholder="Job ID" required><br>
+    <select name="photo_type">
+        <option value="before">Before</option>
+        <option value="after">After</option>
+    </select><br>
+    <input type="file" name="file" required><br>
+    <button type="submit">Upload</button>
+</form>
+</body>
+</html>
