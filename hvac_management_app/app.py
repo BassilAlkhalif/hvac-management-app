@@ -1,28 +1,22 @@
-
-from flask import Flask, render_template, request, redirect, url_for, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.utils import secure_filename
 import os
-
-# Create the uploads directory if it doesn't exist
-if not os.path.exists('uploads'):
-    os.makedirs('uploads')
-
-os.chmod('uploads', 0o777)  # Grants read, write, and execute permissions
+from flask import Flask, render_template, request, jsonify
+from werkzeug.utils import secure_filename
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = 'uploads/'
+
+# Use an absolute path for the uploads folder
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB limit
 
 db = SQLAlchemy(app)
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(10), nullable=False)
+# Ensure the uploads directory exists
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -51,16 +45,18 @@ def upload_photo():
     if file and photo_type in ['before', 'after']:
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-
-        job = Job.query.get(job_id)
-        if photo_type == 'before':
-            job.before_photo = filepath
-        else:
-            job.after_photo = filepath
-
-        db.session.commit()
-        return jsonify({"message": f"{photo_type.capitalize()} photo uploaded successfully"})
+        
+        try:
+            file.save(filepath)
+            job = Job.query.get(job_id)
+            if photo_type == 'before':
+                job.before_photo = filepath
+            else:
+                job.after_photo = filepath
+            db.session.commit()
+            return jsonify({"message": f"{photo_type.capitalize()} photo uploaded successfully", "path": filepath})
+        except Exception as e:
+            return jsonify({"error": f"File upload failed: {str(e)}"}), 500
 
     return jsonify({"error": "Invalid upload"}), 400
 
