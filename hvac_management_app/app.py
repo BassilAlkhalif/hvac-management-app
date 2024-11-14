@@ -1,15 +1,13 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
-from flask import flash
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "123456"
-
 
 # Absolute path for uploads folder
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
@@ -40,10 +38,11 @@ if not os.path.exists('hvac_management.db'):
     with app.app_context():
         db.create_all()
 
-# Home Route (Navigation)
+# Home Route
 @app.route('/')
 def home():
-    return render_template('index.html')
+    jobs = Job.query.filter(Job.job_status != 'completed').all()
+    return render_template('index.html', jobs=jobs)
 
 # Create New Job Route
 @app.route('/create_job', methods=['GET', 'POST'])
@@ -52,8 +51,6 @@ def create_job():
         customer_name = request.form.get('customer_name')
         technician_name = request.form.get('technician_name')
         job_type = request.form.get('job_type')
-        if job_type in ["Repair", "Maintenance"]:
-            job_type = "Maintenance"
         scheduled_date = request.form.get('scheduled_date')
 
         try:
@@ -61,7 +58,6 @@ def create_job():
                 customer_name=customer_name,
                 technician_name=technician_name,
                 job_type=job_type,
-                job_status='scheduled',
                 scheduled_date=scheduled_date
             )
             db.session.add(new_job)
@@ -74,71 +70,40 @@ def create_job():
     return render_template('create_job.html')
 
 # Perform Job Route
-@app.route('/perform_job', methods=['GET', 'POST'])
-def perform_job():
+@app.route('/perform_job/<int:job_id>', methods=['GET', 'POST'])
+def perform_job(job_id):
+    job = Job.query.get(job_id)
+
     if request.method == 'POST':
-        job_id = request.form.get('job_id')
-        photo_type = request.form.get('photo_type')
-        file = request.files['file']
-
-        if file and photo_type in ['before', 'after']:
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-            try:
-                file.save(filepath)
-                job = Job.query.get(job_id)
-
-                if not job:
-                    return jsonify({"error": f"Job with ID {job_id} not found"}), 404
-
-                if photo_type == 'before':
-                    job.before_photo = filepath
-                else:
-                    job.after_photo = filepath
-
-                if job.before_photo and job.after_photo:
-                    job.job_status = 'completed'
-                    job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
+        if 'upload_before' in request.form:
+            before_photo = request.files['before_photo']
+            if before_photo:
+                filename = secure_filename(before_photo.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                before_photo.save(filepath)
+                job.before_photo = filename
                 db.session.commit()
+                flash("Before photo uploaded successfully!", "success")
+                return redirect(url_for('perform_job', job_id=job_id))
+
+        elif 'upload_after' in request.form:
+            after_photo = request.files['after_photo']
+            comment = request.form.get('comment')
+            if after_photo:
+                filename = secure_filename(after_photo.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                after_photo.save(filepath)
+                job.after_photo = filename
+                job.notes = comment
+                job.job_status = 'completed'
+                job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                db.session.commit()
+                flash("Job completed successfully!", "success")
                 return redirect(url_for('home'))
-            except Exception as e:
-                return jsonify({"error": f"File upload failed: {str(e)}"}), 500
 
-        return jsonify({"error": "Invalid upload"}), 400
+    return render_template('perform_job.html', job=job)
 
-    jobs = Job.query.filter_by(job_status="scheduled").all()
-    return render_template('perform_jobs.html', jobs=jobs)
-
-# Dashboard Route
-@app.route('/dashboard')
-def dashboard():
-    total_jobs = Job.query.count()
-    completed_jobs = Job.query.filter_by(job_status='completed').count()
-    pending_jobs = total_jobs - completed_jobs
-
-    technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
-    technician_names = [data[0] for data in technician_data]
-    technician_counts = [data[1] for data in technician_data]
-
-    stats = {
-        "total_jobs": total_jobs,
-        "completed_jobs": completed_jobs,
-        "pending_jobs": pending_jobs,
-        "technician_names": technician_names,
-        "technician_counts": technician_counts
-    }
-
-    return render_template('dashboard.html', stats=stats)
-
-# View All Jobs Route
-@app.route('/view_jobs')
-def view_jobs():
-    jobs = Job.query.all()
-    return render_template('view_jobs.html', jobs=jobs)
-
-# Job Details Route
+# View Job Details Route
 @app.route('/job_details/<int:job_id>')
 def job_details(job_id):
     job = Job.query.get(job_id)
