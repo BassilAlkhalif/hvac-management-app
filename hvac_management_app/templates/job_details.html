@@ -8,30 +8,20 @@
 <body>
 <h1>Job Details (ID: {{ job.id }})</h1>
 
-<p><strong>Customer Name:</strong> {{ job.customer_name }}</p>
-<p><strong>Technician Name:</strong> {{ job.technician_name }}</p>
-<p><strong>Job Type:</strong> {{ job.job_type }}</p>
-<p><strong>Status:</strong> {{ job.job_status }}</p>
-<p><strong>Scheduled Date:</strong> {{ job.scheduled_date }}</p>
-<p><strong>Completion Time:</strong> {{ job.completion_time }}</p>
-<p><strong>Notes:</strong> {{ job.notes }}</p>
+<p>Customer Name: {{ job.customer_name }}</p>
+<p>Technician Name: {{ job.technician_name }}</p>
+<p>Job Type: {{ job.job_type }}</p>
+<p>Status: {{ job.job_status }}</p>
+<p>Scheduled Date: {{ job.scheduled_date }}</p>
+<p>Completion Time: {{ job.completion_time }}</p>
+<p>Notes: {{ job.notes }}</p>
 
-<h2>Photos</h2>
-<p><strong>Before Photo:</strong></p>
-{% if job.before_photo %}
-<img src="/{{ job.before_photo }}" alt="Before Photo" style="max-width: 300px;">
-{% else %}
-<p>No before photo uploaded.</p>
-{% endif %}
+<h3>Photos</h3>
+<p>Before Photo: <a href="{{ url_for('static', filename='uploads/' + job.before_photo) }}" target="_blank">
+    <img src="{{ url_for('static', filename='uploads/' + job.before_photo) }}" width="150"></a></p>
+<p>After Photo: <a href="{{ url_for('static', filename='uploads/' + job.after_photo) }}" target="_blank">
+    <img src="{{ url_for('static', filename='uploads/' + job.after_photo) }}" width="150"></a></p>
 
-<p><strong>After Photo:</strong></p>
-{% if job.after_photo %}
-<img src="/{{ job.after_photo }}" alt="After Photo" style="max-width: 300px;">
-{% else %}
-<p>No after photo uploaded.</p>
-{% endif %}
-
-<br>
-<a href="/view_jobs">Back to Job List</a>
+<a href="/">Back to Dashboard</a>
 </body>
 </html>
