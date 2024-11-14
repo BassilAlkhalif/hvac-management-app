@@ -6,42 +6,21 @@
 <title>Perform Job</title>
 </head>
 <body>
-<h1>Perform Job</h1>
+<h1>Perform Job (ID: {{ job.id }})</h1>
 
-<form id="uploadForm" action="/perform_job" method="post" enctype="multipart/form-data">
-    <label for="job_id">Select Job:</label>
-    <select name="job_id" id="job_id" required>
-        {% for job in jobs %}
-            <option value="{{ job.id }}">{{ job.customer_name }} - {{ job.job_type }}</option>
-        {% endfor %}
-    </select><br><br>
-
-    <label for="photo_type">Photo Type:</label>
-    <select name="photo_type" id="photo_type" required>
-        <option value="before">Before</option>
-        <option value="after">After</option>
-    </select><br><br>
-
-    <input type="file" name="file" id="fileInput" required><br><br>
-    <img id="previewImage" style="max-width: 200px; display: none;"><br><br>
-
-    <button type="submit">Upload Photo</button>
+<form method="POST" enctype="multipart/form-data">
+    <label for="before_photo">Upload Before Photo:</label>
+    <input type="file" name="before_photo" required>
+    <button type="submit" name="upload_before">Upload Before Photo</button>
 </form>
 
-<script>
-document.getElementById('fileInput').addEventListener('change', function(event) {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = document.getElementById('previewImage');
-        img.src = e.target.result;
-        img.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-});
-</script>
+<form method="POST" enctype="multipart/form-data">
+    <label for="after_photo">Upload After Photo:</label>
+    <input type="file" name="after_photo" required><br><br>
+    <textarea name="comment" placeholder="Add your comment here..."></textarea>
+    <button type="submit" name="upload_after">Upload After Photo and Complete Job</button>
+</form>
 
-<br>
 <a href="/">Back to Dashboard</a>
 </body>
 </html>
