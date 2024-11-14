@@ -1,21 +1,62 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HVAC Management</title>
+<title>HVAC Management Dashboard</title>
 </head>
 <body>
+<h1>HVAC Management Dashboard</h1>
+
+<!-- Create Job Form -->
+<h2>Create New Job</h2>
+<form action="/create_job" method="post">
+    <label for="customer_name">Customer Name:</label>
+    <input type="text" id="customer_name" name="customer_name" required><br><br>
+
+    <label for="technician_name">Technician Name:</label>
+    <input type="text" id="technician_name" name="technician_name" required><br><br>
+
+    <label for="job_type">Job Type:</label>
+    <select id="job_type" name="job_type">
+        <option value="Installation">Installation</option>
+        <option value="Maintenance">Maintenance</option>
+        <option value="Repair">Repair</option>
+    </select><br><br>
+
+    <label for="scheduled_date">Scheduled Date:</label>
+    <input type="date" id="scheduled_date" name="scheduled_date" required><br><br>
+
+    <button type="submit">Create Job</button>
+</form>
+
+<!-- Upload Photo Form -->
 <h2>Upload Before/After Photo</h2>
 <form action="/upload" method="post" enctype="multipart/form-data">
-    <input type="text" name="job_id" placeholder="Job ID" required><br>
-    <select name="photo_type">
+    <label for="job_id">Select Job:</label>
+    <select name="job_id" id="job_id" required>
+        {% for job in jobs %}
+            <option value="{{ job.id }}">{{ job.customer_name }} - {{ job.job_type }} ({{ job.scheduled_date }})</option>
+        {% endfor %}
+    </select><br><br>
+
+    <label for="photo_type">Photo Type:</label>
+    <select name="photo_type" id="photo_type">
         <option value="before">Before</option>
         <option value="after">After</option>
-    </select><br>
-    <input type="file" name="file" required><br>
+    </select><br><br>
+
+    <input type="file" name="file" required><br><br>
     <button type="submit">Upload</button>
 </form>
+
+<!-- Display Current Jobs -->
+<h2>Current Jobs</h2>
+<ul>
+    {% for job in jobs %}
+        <li>{{ job.customer_name }} - {{ job.job_type }} ({{ job.scheduled_date }}) - Status: {{ job.job_status }}</li>
+    {% endfor %}
+</ul>
+
 </body>
 </html>
