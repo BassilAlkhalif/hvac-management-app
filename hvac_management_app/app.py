@@ -43,28 +43,32 @@ def home():
     return render_template('index.html')
 
 # Create New Job Route
-@app.route('/create_job', methods=['POST'])
+@app.route('/create_job', methods=['GET', 'POST'])
 def create_job():
-    customer_name = request.form.get('customer_name')
-    technician_name = request.form.get('technician_name')
-    job_type = request.form.get('job_type')
-    if job_type in ["Repair", "Maintenance"]:
-        job_type = "Maintenance"  # Combine Repair and Maintenance
-    scheduled_date = request.form.get('scheduled_date')
+    if request.method == 'POST':
+        customer_name = request.form.get('customer_name')
+        technician_name = request.form.get('technician_name')
+        job_type = request.form.get('job_type')
+        if job_type in ["Repair", "Maintenance"]:
+            job_type = "Maintenance"  # Combine Repair and Maintenance
+        scheduled_date = request.form.get('scheduled_date')
 
-    try:
-        new_job = Job(
-            customer_name=customer_name,
-            technician_name=technician_name,
-            job_type=job_type,
-            job_status='scheduled',
-            scheduled_date=scheduled_date
-        )
-        db.session.add(new_job)
-        db.session.commit()
-        return redirect(url_for('home'))
-    except Exception as e:
-        return jsonify({"error": f"Job creation failed: {str(e)}"}), 500
+        try:
+            new_job = Job(
+                customer_name=customer_name,
+                technician_name=technician_name,
+                job_type=job_type,
+                job_status='scheduled',
+                scheduled_date=scheduled_date
+            )
+            db.session.add(new_job)
+            db.session.commit()
+            return redirect(url_for('home'))
+        except Exception as e:
+            return jsonify({"error": f"Job creation failed: {str(e)}"}), 500
+
+    # If the request method is GET, render the create_job.html form
+    return render_template('create_job.html')
 
 # Perform Job Route
 @app.route('/perform_job', methods=['GET', 'POST'])
