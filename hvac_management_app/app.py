@@ -8,6 +8,8 @@ from flask import flash
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = "123456"
+
 
 # Absolute path for uploads folder
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
