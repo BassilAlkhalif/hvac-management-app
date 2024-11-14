@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create New Job</title>
+</head>
+<body>
+<h1>Create New Job</h1>
+
+<form action="/create_job" method="post">
+    <label for="customer_name">Customer Name:</label>
+    <input type="text" id="customer_name" name="customer_name" required><br><br>
+
+    <label for="technician_name">Technician Name:</label>
+    <input type="text" id="technician_name" name="technician_name" required><br><br>
+
+    <label for="job_type">Job Type:</label>
+    <select id="job_type" name="job_type">
+        <option value="Installation">Installation</option>
+        <option value="Maintenance">Maintenance</option>
+    </select><br><br>
+
+    <label for="scheduled_date">Scheduled Date:</label>
+    <input type="date" id="scheduled_date" name="scheduled_date" required><br><br>
+
+    <button type="submit">Create Job</button>
+</form>
+
+<br>
+<a href="/">Back to Dashboard</a>
+</body>
+</html>
