@@ -1,9 +1,13 @@
 import os
+import logging
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import time
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
@@ -88,6 +92,11 @@ def perform_job(job_id):
                     filename = f"{job_id}_before_{int(time.time())}_{secure_filename(before_photo.filename)}"
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     before_photo.save(filepath)
+                    logging.debug(f"Before photo saved at: {filepath}")
+                    if os.path.exists(filepath):
+                        logging.debug("Before photo file exists.")
+                    else:
+                        logging.error("Before photo file does not exist after saving.")
                     job.before_photo = filename
                     db.session.commit()
                     flash("Before photo uploaded successfully!", "success")
@@ -101,6 +110,11 @@ def perform_job(job_id):
                     filename = f"{job_id}_after_{int(time.time())}_{secure_filename(after_photo.filename)}"
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     after_photo.save(filepath)
+                    logging.debug(f"After photo saved at: {filepath}")
+                    if os.path.exists(filepath):
+                        logging.debug("After photo file exists.")
+                    else:
+                        logging.error("After photo file does not exist after saving.")
                     job.after_photo = filename
                     job.notes = comment
                     job.job_status = 'completed'
@@ -109,45 +123,11 @@ def perform_job(job_id):
                     flash("Job completed successfully!", "success")
                     return redirect(url_for('home'))
     except Exception as e:
+        logging.error(f"An error occurred: {str(e)}")
         flash(f"An error occurred: {str(e)}", "danger")
         return redirect(url_for('home'))
 
     return render_template('perform_job.html', job=job)
-
-# Dashboard Route
-@app.route('/dashboard')
-def dashboard():
-    try:
-        total_jobs = Job.query.count()
-        completed_jobs = Job.query.filter_by(job_status='completed').count()
-        pending_jobs = total_jobs - completed_jobs
-
-        technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
-        technician_names = [data[0] for data in technician_data]
-        technician_counts = [data[1] for data in technician_data]
-
-        stats = {
-            "total_jobs": total_jobs,
-            "completed_jobs": completed_jobs,
-            "pending_jobs": pending_jobs,
-            "technician_names": technician_names,
-            "technician_counts": technician_counts
-        }
-
-        return render_template('dashboard.html', stats=stats)
-    except Exception as e:
-        flash(f"Error loading dashboard: {str(e)}", "danger")
-        return redirect(url_for('home'))
-
-# View All Jobs Route
-@app.route('/view_jobs')
-def view_jobs():
-    try:
-        jobs = Job.query.all()
-        return render_template('view_jobs.html', jobs=jobs)
-    except Exception as e:
-        flash(f"An error occurred: {str(e)}", "danger")
-        return redirect(url_for('home'))
 
 # Job Details Route
 @app.route('/job_details/<int:job_id>')
