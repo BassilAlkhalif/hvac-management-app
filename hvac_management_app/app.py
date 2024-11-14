@@ -116,6 +116,32 @@ def job_details(job_id):
         return jsonify({"error": f"Job with ID {job_id} not found"}), 404
     return render_template('job_details.html', job=job)
 
+# Dashboard Route
+@app.route('/dashboard')
+def dashboard():
+    # Get total job count
+    total_jobs = Job.query.count()
+
+    # Get count of completed and pending jobs
+    completed_jobs = Job.query.filter_by(job_status='completed').count()
+    pending_jobs = total_jobs - completed_jobs
+
+    # Get job count per technician
+    technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
+    technician_names = [data[0] for data in technician_data]
+    technician_counts = [data[1] for data in technician_data]
+
+    # Data for charts
+    stats = {
+        "total_jobs": total_jobs,
+        "completed_jobs": completed_jobs,
+        "pending_jobs": pending_jobs,
+        "technician_names": technician_names,
+        "technician_counts": technician_counts
+    }
+
+    return render_template('dashboard.html', stats=stats)
+
 # Run the Application
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
