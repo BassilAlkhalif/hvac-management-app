@@ -2,130 +2,83 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* General styling */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f8;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-        
-        /* Navbar styling */
-        .navbar {
-            background-color: #3E95CD;
-            color: #fff;
-            padding: 1em 0;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .navbar h1 {
-            margin: 0;
-            font-size: 1.5em;
-        }
-        
-        /* Summary cards */
-        .summary-cards {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px auto;
-            max-width: 1000px;
-        }
         .card {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            text-align: center;
-            width: 30%;
+            margin: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        .card h3 {
-            font-size: 1.2em;
-            color: #555;
+        .navbar {
+            background-color: #007bff;
+            color: white;
         }
-        .card .icon {
-            font-size: 2.5em;
-            color: #3E95CD;
-            margin-bottom: 10px;
-        }
-        .card .number {
-            font-size: 1.8em;
-            font-weight: bold;
-        }
-
-        /* Chart container styling */
         .chart-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 20px;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
         }
         .chart-box {
-            padding: 10px;
-            background-color: #fff;
+            background-color: white;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        canvas {
-            width: 100% !important;
-            height: 250px !important;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <div class="navbar">
+    <div class="navbar p-3 text-center">
         <h1>HVAC Management Dashboard</h1>
     </div>
-
-    <!-- Summary Cards -->
-    <div class="summary-cards">
-        <div class="card">
-            <div class="icon"><i class="fas fa-tasks"></i></div>
-            <div class="number">{{ stats.total_jobs }}</div>
-            <h3>Total Jobs</h3>
-        </div>
-        <div class="card">
-            <div class="icon"><i class="fas fa-check-circle"></i></div>
-            <div class="number">{{ stats.completed_jobs }}</div>
-            <h3>Completed Jobs</h3>
-        </div>
-        <div class="card">
-            <div class="icon"><i class="fas fa-clock"></i></div>
-            <div class="number">{{ stats.pending_jobs }}</div>
-            <h3>Pending Jobs</h3>
-        </div>
-    </div>
-
-    <!-- Charts -->
-    <div class="chart-container">
-        <!-- Job Status Pie Chart -->
-        <div class="chart-box">
-            <h3>Job Status Overview</h3>
-            <canvas id="jobStatusChart"></canvas>
-        </div>
-
-        <!-- Technician Workload Bar Chart -->
-        <div class="chart-box">
-            <h3>Technician Workload</h3>
-            <canvas id="technicianWorkloadChart"></canvas>
+    
+    <div class="container mt-5">
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Total Jobs</h3>
+                        <p class="display-4">{{ stats.total_jobs }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Completed Jobs</h3>
+                        <p class="display-4">{{ stats.completed_jobs }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Pending Jobs</h3>
+                        <p class="display-4">{{ stats.pending_jobs }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Monthly Job Trends Line Chart -->
-        <div class="chart-box">
-            <h3>Monthly Job Trends</h3>
-            <canvas id="monthlyJobTrendChart"></canvas>
+        <div class="chart-container">
+            <div class="chart-box">
+                <h3>Job Status Overview</h3>
+                <canvas id="jobStatusChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>Technician Workload</h3>
+                <canvas id="technicianWorkloadChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>Monthly Job Trends</h3>
+                <canvas id="monthlyJobTrendChart"></canvas>
+            </div>
         </div>
     </div>
 
     <script>
-        // Job Status Pie Chart
         const jobStatusChartCtx = document.getElementById('jobStatusChart').getContext('2d');
         new Chart(jobStatusChartCtx, {
             type: 'pie',
@@ -134,12 +87,11 @@
                 datasets: [{
                     label: 'Job Status',
                     data: [{{ stats.completed_jobs }}, {{ stats.pending_jobs }}],
-                    backgroundColor: ['#4CAF50', '#FF5722']
+                    backgroundColor: ['#28a745', '#dc3545']
                 }]
             }
         });
 
-        // Technician Workload Bar Chart
         const technicianWorkloadChartCtx = document.getElementById('technicianWorkloadChart').getContext('2d');
         new Chart(technicianWorkloadChartCtx, {
             type: 'bar',
@@ -148,12 +100,11 @@
                 datasets: [{
                     label: 'Jobs Assigned',
                     data: {{ stats.technician_counts | tojson }},
-                    backgroundColor: '#3E95CD'
+                    backgroundColor: '#007bff'
                 }]
             }
         });
 
-        // Monthly Job Trends Line Chart
         const monthlyJobTrendChartCtx = document.getElementById('monthlyJobTrendChart').getContext('2d');
         new Chart(monthlyJobTrendChartCtx, {
             type: 'line',
@@ -162,7 +113,7 @@
                 datasets: [{
                     label: 'Jobs Completed',
                     data: {{ stats.monthly_completed_jobs | tojson }},
-                    borderColor: '#8E5EA2',
+                    borderColor: '#dc3545',
                     fill: false
                 }]
             }
