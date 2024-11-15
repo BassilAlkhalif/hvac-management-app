@@ -52,11 +52,6 @@ if not os.path.exists('hvac_management.db'):
     with app.app_context():
         db.create_all()
 
-# Route to serve uploaded files
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
 # Home Route
 @app.route('/')
 def home():
@@ -103,16 +98,19 @@ def perform_job(job_id):
             after_photo = request.files.get('after_photo')
             comment = request.form.get('comment')
 
-            if before_photo:
+            # Upload before photo
+            if before_photo and before_photo.filename != '':
                 upload_result = cloudinary.uploader.upload(before_photo)
                 job.before_photo = upload_result['secure_url']
-                logging.debug(f"Before photo uploaded to Cloudinary: {job.before_photo}")
+                logging.debug(f"Before photo uploaded: {job.before_photo}")
 
-            if after_photo:
+            # Upload after photo
+            if after_photo and after_photo.filename != '':
                 upload_result = cloudinary.uploader.upload(after_photo)
                 job.after_photo = upload_result['secure_url']
-                logging.debug(f"After photo uploaded to Cloudinary: {job.after_photo}")
+                logging.debug(f"After photo uploaded: {job.after_photo}")
 
+            # Update job status
             job.notes = comment
             job.job_status = 'completed'
             job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -151,7 +149,7 @@ def view_jobs():
         flash(f"An error occurred: {str(e)}", "danger")
         return redirect(url_for('home'))
 
-# Dashboard Route
+# Dashboard Route (Reverted Version with Graphs)
 @app.route('/dashboard')
 def dashboard():
     try:
@@ -160,13 +158,15 @@ def dashboard():
         pending_jobs = total_jobs - completed_jobs
 
         technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
-        technician_summary = [(data[0], data[1]) for data in technician_data]
+        technician_names = [data[0] for data in technician_data]
+        technician_counts = [data[1] for data in technician_data]
 
         stats = {
             "total_jobs": total_jobs,
             "completed_jobs": completed_jobs,
             "pending_jobs": pending_jobs,
-            "technician_summary": technician_summary
+            "technician_names": technician_names,
+            "technician_counts": technician_counts
         }
 
         return render_template('dashboard.html', stats=stats)
