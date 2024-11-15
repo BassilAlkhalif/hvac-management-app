@@ -73,8 +73,8 @@
 
     <h2>Technician Job Count</h2>
     <ul class="technician-list">
-        {% for name, count in zip(stats.technician_names, stats.technician_counts) %}
-        <li>{{ name }}: {{ count }} jobs</li>
+        {% for technician, count in stats.technician_summary %}
+        <li>{{ technician }}: {{ count }} jobs</li>
         {% endfor %}
     </ul>
 
