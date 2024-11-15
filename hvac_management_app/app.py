@@ -1,12 +1,13 @@
 import os
 import logging
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import time
 import cloudinary
 import cloudinary.uploader
+import cloudinary.api
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -23,14 +24,10 @@ cloudinary.config(
     api_secret="vOCqr2HynRmmODmLm9Mz_Xl4W9I"
 )
 
-# Path for uploads folder
-UPLOAD_FOLDER = 'uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB file size limit
-
 db = SQLAlchemy(app)
 
 # Ensure the uploads folder exists
+UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -58,31 +55,6 @@ def home():
     jobs = Job.query.filter(Job.job_status != 'completed').all()
     return render_template('index.html', jobs=jobs)
 
-# Create New Job Route
-@app.route('/create_job', methods=['GET', 'POST'])
-def create_job():
-    if request.method == 'POST':
-        customer_name = request.form.get('customer_name')
-        technician_name = request.form.get('technician_name')
-        job_type = request.form.get('job_type')
-        scheduled_date = request.form.get('scheduled_date')
-
-        try:
-            new_job = Job(
-                customer_name=customer_name,
-                technician_name=technician_name,
-                job_type=job_type,
-                scheduled_date=scheduled_date
-            )
-            db.session.add(new_job)
-            db.session.commit()
-            flash("New job added successfully!", "success")
-            return redirect(url_for('home'))
-        except Exception as e:
-            flash(f"Error: {str(e)}", "danger")
-            return redirect(url_for('home'))
-    return render_template('create_job.html')
-
 # Perform Job Route
 @app.route('/perform_job/<int:job_id>', methods=['GET', 'POST'])
 def perform_job(job_id):
@@ -97,18 +69,35 @@ def perform_job(job_id):
             before_photo = request.files.get('before_photo')
             after_photo = request.files.get('after_photo')
             comment = request.form.get('comment')
+            timestamp = str(int(time.time()))
 
             # Upload before photo
-            if before_photo and before_photo.filename != '':
-                upload_result = cloudinary.uploader.upload(before_photo)
-                job.before_photo = upload_result['secure_url']
-                logging.debug(f"Before photo uploaded: {job.before_photo}")
+            if before_photo:
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        before_photo,
+                        timestamp=timestamp,
+                        api_key="189685417282461",
+                        api_secret="vOCqr2HynRmmODmLm9Mz_Xl4W9I"
+                    )
+                    job.before_photo = upload_result['secure_url']
+                except Exception as e:
+                    logging.error(f"Before photo upload failed: {str(e)}")
+                    flash("Before photo upload failed.", "danger")
 
             # Upload after photo
-            if after_photo and after_photo.filename != '':
-                upload_result = cloudinary.uploader.upload(after_photo)
-                job.after_photo = upload_result['secure_url']
-                logging.debug(f"After photo uploaded: {job.after_photo}")
+            if after_photo:
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        after_photo,
+                        timestamp=timestamp,
+                        api_key="189685417282461",
+                        api_secret="vOCqr2HynRmmODmLm9Mz_Xl4W9I"
+                    )
+                    job.after_photo = upload_result['secure_url']
+                except Exception as e:
+                    logging.error(f"After photo upload failed: {str(e)}")
+                    flash("After photo upload failed.", "danger")
 
             # Update job status
             job.notes = comment
@@ -125,31 +114,7 @@ def perform_job(job_id):
 
     return render_template('perform_job.html', job=job)
 
-# Job Details Route
-@app.route('/job_details/<int:job_id>')
-def job_details(job_id):
-    job = Job.query.get(job_id)
-    if not job:
-        flash("Job not found!", "danger")
-        return redirect(url_for('view_jobs'))
-
-    before_photo_url = job.before_photo if job.before_photo else None
-    after_photo_url = job.after_photo if job.after_photo else None
-
-    return render_template('job_details.html', job=job, before_photo_url=before_photo_url, after_photo_url=after_photo_url)
-
-# View All Jobs Route
-@app.route('/view_jobs')
-def view_jobs():
-    try:
-        jobs = Job.query.all()
-        return render_template('view_jobs.html', jobs=jobs)
-    except Exception as e:
-        logging.error(f"An error occurred in view_jobs: {str(e)}")
-        flash(f"An error occurred: {str(e)}", "danger")
-        return redirect(url_for('home'))
-
-# Dashboard Route (Reverted Version with Graphs)
+# Dashboard Route with Charts
 @app.route('/dashboard')
 def dashboard():
     try:
@@ -161,15 +126,14 @@ def dashboard():
         technician_names = [data[0] for data in technician_data]
         technician_counts = [data[1] for data in technician_data]
 
-        stats = {
-            "total_jobs": total_jobs,
-            "completed_jobs": completed_jobs,
-            "pending_jobs": pending_jobs,
-            "technician_names": technician_names,
-            "technician_counts": technician_counts
-        }
-
-        return render_template('dashboard.html', stats=stats)
+        return render_template(
+            'dashboard.html',
+            total_jobs=total_jobs,
+            completed_jobs=completed_jobs,
+            pending_jobs=pending_jobs,
+            technician_names=technician_names,
+            technician_counts=technician_counts
+        )
     except Exception as e:
         logging.error(f"Error loading dashboard: {str(e)}")
         flash(f"Error loading dashboard: {str(e)}", "danger")
