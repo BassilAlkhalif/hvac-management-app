@@ -16,17 +16,21 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "123456"
 
-# Configure Cloudinary
+# Cloudinary configuration
 cloudinary.config(
     cloud_name="dc3tb4drj",
     api_key="189685417282461",
-    api_secret="vOCqr2HynRmm04m9DKT-8mFkDLg"
+    api_secret="vOCqr2HynRmmODmLm9Mz_Xl4W9I"
 )
+
+# Path for uploads folder
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB file size limit
 
 db = SQLAlchemy(app)
 
-# Ensure the uploads folder exists (for local testing only)
-UPLOAD_FOLDER = 'uploads'
+# Ensure the uploads folder exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -38,8 +42,8 @@ class Job(db.Model):
     job_type = db.Column(db.String(50), nullable=False)
     job_status = db.Column(db.String(50), default='scheduled')
     scheduled_date = db.Column(db.String(50))
-    before_photo_url = db.Column(db.String(500))
-    after_photo_url = db.Column(db.String(500))
+    before_photo = db.Column(db.String(200))
+    after_photo = db.Column(db.String(200))
     completion_time = db.Column(db.String(50))
     notes = db.Column(db.String(500))
 
@@ -48,14 +52,10 @@ if not os.path.exists('hvac_management.db'):
     with app.app_context():
         db.create_all()
 
-# Upload file to Cloudinary and return the URL
-def upload_to_cloudinary(file):
-    try:
-        result = cloudinary.uploader.upload(file)
-        return result['secure_url']
-    except Exception as e:
-        logging.error(f"Error uploading file to Cloudinary: {str(e)}")
-        return None
+# Route to serve uploaded files
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 # Home Route
 @app.route('/')
@@ -72,17 +72,20 @@ def create_job():
         job_type = request.form.get('job_type')
         scheduled_date = request.form.get('scheduled_date')
 
-        new_job = Job(
-            customer_name=customer_name,
-            technician_name=technician_name,
-            job_type=job_type,
-            scheduled_date=scheduled_date
-        )
-        db.session.add(new_job)
-        db.session.commit()
-        flash("New job added successfully!", "success")
-        return redirect(url_for('home'))
-
+        try:
+            new_job = Job(
+                customer_name=customer_name,
+                technician_name=technician_name,
+                job_type=job_type,
+                scheduled_date=scheduled_date
+            )
+            db.session.add(new_job)
+            db.session.commit()
+            flash("New job added successfully!", "success")
+            return redirect(url_for('home'))
+        except Exception as e:
+            flash(f"Error: {str(e)}", "danger")
+            return redirect(url_for('home'))
     return render_template('create_job.html')
 
 # Perform Job Route
@@ -101,10 +104,14 @@ def perform_job(job_id):
             comment = request.form.get('comment')
 
             if before_photo:
-                job.before_photo_url = upload_to_cloudinary(before_photo)
+                upload_result = cloudinary.uploader.upload(before_photo)
+                job.before_photo = upload_result['secure_url']
+                logging.debug(f"Before photo uploaded to Cloudinary: {job.before_photo}")
 
             if after_photo:
-                job.after_photo_url = upload_to_cloudinary(after_photo)
+                upload_result = cloudinary.uploader.upload(after_photo)
+                job.after_photo = upload_result['secure_url']
+                logging.debug(f"After photo uploaded to Cloudinary: {job.after_photo}")
 
             job.notes = comment
             job.job_status = 'completed'
@@ -126,39 +133,47 @@ def job_details(job_id):
     job = Job.query.get(job_id)
     if not job:
         flash("Job not found!", "danger")
-        return redirect(url_for('home'))
+        return redirect(url_for('view_jobs'))
 
-    before_photo_url = job.before_photo_url
-    after_photo_url = job.after_photo_url
+    before_photo_url = job.before_photo if job.before_photo else None
+    after_photo_url = job.after_photo if job.after_photo else None
 
     return render_template('job_details.html', job=job, before_photo_url=before_photo_url, after_photo_url=after_photo_url)
 
 # View All Jobs Route
 @app.route('/view_jobs')
 def view_jobs():
-    jobs = Job.query.all()
-    return render_template('view_jobs.html', jobs=jobs)
+    try:
+        jobs = Job.query.all()
+        return render_template('view_jobs.html', jobs=jobs)
+    except Exception as e:
+        logging.error(f"An error occurred in view_jobs: {str(e)}")
+        flash(f"An error occurred: {str(e)}", "danger")
+        return redirect(url_for('home'))
 
 # Dashboard Route
 @app.route('/dashboard')
 def dashboard():
-    total_jobs = Job.query.count()
-    completed_jobs = Job.query.filter_by(job_status='completed').count()
-    pending_jobs = total_jobs - completed_jobs
+    try:
+        total_jobs = Job.query.count()
+        completed_jobs = Job.query.filter_by(job_status='completed').count()
+        pending_jobs = total_jobs - completed_jobs
 
-    technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
-    technician_names = [data[0] for data in technician_data]
-    technician_counts = [data[1] for data in technician_data]
+        technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
+        technician_summary = [(data[0], data[1]) for data in technician_data]
 
-    stats = {
-        "total_jobs": total_jobs,
-        "completed_jobs": completed_jobs,
-        "pending_jobs": pending_jobs,
-        "technician_names": technician_names,
-        "technician_counts": technician_counts
-    }
+        stats = {
+            "total_jobs": total_jobs,
+            "completed_jobs": completed_jobs,
+            "pending_jobs": pending_jobs,
+            "technician_summary": technician_summary
+        }
 
-    return render_template('dashboard.html', stats=stats)
+        return render_template('dashboard.html', stats=stats)
+    except Exception as e:
+        logging.error(f"Error loading dashboard: {str(e)}")
+        flash(f"Error loading dashboard: {str(e)}", "danger")
+        return redirect(url_for('home'))
 
 # Run the Application
 if __name__ == '__main__':
