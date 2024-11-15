@@ -1,85 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard</title>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f2f2f2;
-        padding: 20px;
-    }
-    .container {
-        max-width: 800px;
-        margin: auto;
-        background-color: #fff;
-        padding: 20px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-    }
-    h1 {
-        color: #333;
-        text-align: center;
-    }
-    .stats {
-        display: flex;
-        justify-content: space-around;
-        margin-bottom: 20px;
-    }
-    .stat-box {
-        padding: 15px;
-        background-color: #007bff;
-        color: #fff;
-        border-radius: 8px;
-        text-align: center;
-        width: 30%;
-    }
-    .technician-list {
-        margin-top: 20px;
-    }
-    .back-link {
-        display: inline-block;
-        margin-top: 20px;
-        padding: 10px 15px;
-        background-color: #007bff;
-        color: #fff;
-        text-decoration: none;
-        border-radius: 5px;
-    }
-    .back-link:hover {
-        background-color: #0056b3;
-    }
-</style>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-<div class="container">
     <h1>Dashboard</h1>
 
-    <div class="stats">
-        <div class="stat-box">
-            <h2>Total Jobs</h2>
-            <p>{{ stats.total_jobs }}</p>
-        </div>
-        <div class="stat-box">
-            <h2>Completed Jobs</h2>
-            <p>{{ stats.completed_jobs }}</p>
-        </div>
-        <div class="stat-box">
-            <h2>Pending Jobs</h2>
-            <p>{{ stats.pending_jobs }}</p>
-        </div>
-    </div>
+    <!-- Job Status Pie Chart -->
+    <canvas id="jobStatusChart" width="400" height="200"></canvas>
 
-    <h2>Technician Job Count</h2>
-    <ul class="technician-list">
-        {% for technician, count in stats.technician_summary %}
-        <li>{{ technician }}: {{ count }} jobs</li>
-        {% endfor %}
-    </ul>
+    <!-- Technician Workload Bar Chart -->
+    <canvas id="technicianWorkloadChart" width="400" height="200"></canvas>
 
-    <a href="{{ url_for('home') }}" class="back-link">Back to Home</a>
-    <a href="{{ url_for('view_jobs') }}" class="back-link">View All Jobs</a>
-</div>
+    <!-- Monthly Job Trends Line Chart -->
+    <canvas id="monthlyJobTrendChart" width="400" height="200"></canvas>
+
+    <script>
+        // Job Status Pie Chart
+        const jobStatusChartCtx = document.getElementById('jobStatusChart').getContext('2d');
+        new Chart(jobStatusChartCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Completed', 'Pending'],
+                datasets: [{
+                    label: 'Job Status',
+                    data: [{{ stats.completed_jobs }}, {{ stats.pending_jobs }}],
+                    backgroundColor: ['#4CAF50', '#FF5722']
+                }]
+            }
+        });
+
+        // Technician Workload Bar Chart
+        const technicianWorkloadChartCtx = document.getElementById('technicianWorkloadChart').getContext('2d');
+        new Chart(technicianWorkloadChartCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ stats.technician_names | tojson }},
+                datasets: [{
+                    label: 'Jobs Assigned',
+                    data: {{ stats.technician_counts | tojson }},
+                    backgroundColor: '#3E95CD'
+                }]
+            }
+        });
+
+        // Monthly Job Trends Line Chart
+        const monthlyJobTrendChartCtx = document.getElementById('monthlyJobTrendChart').getContext('2d');
+        new Chart(monthlyJobTrendChartCtx, {
+            type: 'line',
+            data: {
+                labels: {{ stats.months | tojson }},
+                datasets: [{
+                    label: 'Jobs Completed',
+                    data: {{ stats.monthly_completed_jobs | tojson }},
+                    borderColor: '#8E5EA2',
+                    fill: false
+                }]
+            }
+        });
+    </script>
 </body>
 </html>
