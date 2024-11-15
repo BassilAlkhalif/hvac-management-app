@@ -4,18 +4,48 @@
     <meta charset="UTF-8">
     <title>Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .chart-box {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        canvas {
+            width: 100% !important;
+            height: 250px !important;
+        }
+    </style>
 </head>
 <body>
-    <h1>Dashboard</h1>
+    <h1 style="text-align: center;">Dashboard</h1>
 
-    <!-- Job Status Pie Chart -->
-    <canvas id="jobStatusChart" width="400" height="200"></canvas>
+    <div class="chart-container">
+        <!-- Job Status Pie Chart -->
+        <div class="chart-box">
+            <h3>Job Status Overview</h3>
+            <canvas id="jobStatusChart"></canvas>
+        </div>
 
-    <!-- Technician Workload Bar Chart -->
-    <canvas id="technicianWorkloadChart" width="400" height="200"></canvas>
+        <!-- Technician Workload Bar Chart -->
+        <div class="chart-box">
+            <h3>Technician Workload</h3>
+            <canvas id="technicianWorkloadChart"></canvas>
+        </div>
 
-    <!-- Monthly Job Trends Line Chart -->
-    <canvas id="monthlyJobTrendChart" width="400" height="200"></canvas>
+        <!-- Monthly Job Trends Line Chart -->
+        <div class="chart-box">
+            <h3>Monthly Job Trends</h3>
+            <canvas id="monthlyJobTrendChart"></canvas>
+        </div>
+    </div>
 
     <script>
         // Job Status Pie Chart
