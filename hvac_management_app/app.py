@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -16,16 +16,16 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hvac_management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "123456"
 
-# Cloudinary configuration
+# Configure Cloudinary
 cloudinary.config(
     cloud_name="dc3tb4drj",
     api_key="189685417282461",
-    api_secret="vOCqr2HynRmmODmLm9Mz_Xl4W9I"
+    api_secret="vOCqr2HynRmm04m9DKT-8mFkDLg"
 )
 
 db = SQLAlchemy(app)
 
-# Ensure the uploads folder exists
+# Ensure the uploads folder exists (for local testing only)
 UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -38,14 +38,24 @@ class Job(db.Model):
     job_type = db.Column(db.String(50), nullable=False)
     job_status = db.Column(db.String(50), default='scheduled')
     scheduled_date = db.Column(db.String(50))
-    before_photo = db.Column(db.String(200))
-    after_photo = db.Column(db.String(200))
+    before_photo_url = db.Column(db.String(500))
+    after_photo_url = db.Column(db.String(500))
     completion_time = db.Column(db.String(50))
     notes = db.Column(db.String(500))
 
 # Initialize the database
-with app.app_context():
-    db.create_all()
+if not os.path.exists('hvac_management.db'):
+    with app.app_context():
+        db.create_all()
+
+# Upload file to Cloudinary and return the URL
+def upload_to_cloudinary(file):
+    try:
+        result = cloudinary.uploader.upload(file)
+        return result['secure_url']
+    except Exception as e:
+        logging.error(f"Error uploading file to Cloudinary: {str(e)}")
+        return None
 
 # Home Route
 @app.route('/')
@@ -53,14 +63,14 @@ def home():
     jobs = Job.query.filter(Job.job_status != 'completed').all()
     return render_template('index.html', jobs=jobs)
 
-# Create Job Route
+# Create New Job Route
 @app.route('/create_job', methods=['GET', 'POST'])
 def create_job():
     if request.method == 'POST':
-        customer_name = request.form['customer_name']
-        technician_name = request.form['technician_name']
-        job_type = request.form['job_type']
-        scheduled_date = request.form['scheduled_date']
+        customer_name = request.form.get('customer_name')
+        technician_name = request.form.get('technician_name')
+        job_type = request.form.get('job_type')
+        scheduled_date = request.form.get('scheduled_date')
 
         new_job = Job(
             customer_name=customer_name,
@@ -70,7 +80,7 @@ def create_job():
         )
         db.session.add(new_job)
         db.session.commit()
-        flash("Job created successfully!", "success")
+        flash("New job added successfully!", "success")
         return redirect(url_for('home'))
 
     return render_template('create_job.html')
@@ -84,40 +94,52 @@ def perform_job(job_id):
         flash("Job not found!", "danger")
         return redirect(url_for('home'))
 
-    if request.method == 'POST':
-        before_photo = request.files.get('before_photo')
-        after_photo = request.files.get('after_photo')
-        comment = request.form.get('comment')
+    try:
+        if request.method == 'POST':
+            before_photo = request.files.get('before_photo')
+            after_photo = request.files.get('after_photo')
+            comment = request.form.get('comment')
 
-        try:
             if before_photo:
-                upload_result = cloudinary.uploader.upload(before_photo)
-                job.before_photo = upload_result['secure_url']
+                job.before_photo_url = upload_to_cloudinary(before_photo)
 
             if after_photo:
-                upload_result = cloudinary.uploader.upload(after_photo)
-                job.after_photo = upload_result['secure_url']
+                job.after_photo_url = upload_to_cloudinary(after_photo)
 
             job.notes = comment
             job.job_status = 'completed'
             job.completion_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             db.session.commit()
             flash("Job completed successfully!", "success")
-        except Exception as e:
-            logging.error(f"Photo upload failed: {str(e)}")
-            flash("Photo upload failed. Please try again.", "danger")
+            return redirect(url_for('home'))
 
+    except Exception as e:
+        logging.error(f"An error occurred: {str(e)}")
+        flash(f"An error occurred: {str(e)}", "danger")
         return redirect(url_for('home'))
 
     return render_template('perform_job.html', job=job)
 
-# View Jobs Route
+# Job Details Route
+@app.route('/job_details/<int:job_id>')
+def job_details(job_id):
+    job = Job.query.get(job_id)
+    if not job:
+        flash("Job not found!", "danger")
+        return redirect(url_for('home'))
+
+    before_photo_url = job.before_photo_url
+    after_photo_url = job.after_photo_url
+
+    return render_template('job_details.html', job=job, before_photo_url=before_photo_url, after_photo_url=after_photo_url)
+
+# View All Jobs Route
 @app.route('/view_jobs')
 def view_jobs():
     jobs = Job.query.all()
     return render_template('view_jobs.html', jobs=jobs)
 
-# Dashboard Route with Charts
+# Dashboard Route
 @app.route('/dashboard')
 def dashboard():
     total_jobs = Job.query.count()
@@ -128,15 +150,17 @@ def dashboard():
     technician_names = [data[0] for data in technician_data]
     technician_counts = [data[1] for data in technician_data]
 
-    return render_template(
-        'dashboard.html',
-        total_jobs=total_jobs,
-        completed_jobs=completed_jobs,
-        pending_jobs=pending_jobs,
-        technician_names=technician_names,
-        technician_counts=technician_counts
-    )
+    stats = {
+        "total_jobs": total_jobs,
+        "completed_jobs": completed_jobs,
+        "pending_jobs": pending_jobs,
+        "technician_names": technician_names,
+        "technician_counts": technician_counts
+    }
+
+    return render_template('dashboard.html', stats=stats)
 
 # Run the Application
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
