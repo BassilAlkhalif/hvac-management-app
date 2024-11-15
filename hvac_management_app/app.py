@@ -146,19 +146,31 @@ def dashboard():
     completed_jobs = Job.query.filter_by(job_status='completed').count()
     pending_jobs = total_jobs - completed_jobs
 
+    # Technician workload data
     technician_data = db.session.query(Job.technician_name, db.func.count(Job.id)).group_by(Job.technician_name).all()
     technician_names = [data[0] for data in technician_data]
     technician_counts = [data[1] for data in technician_data]
+
+    # Monthly job trends
+    monthly_data = db.session.query(
+        db.func.strftime('%Y-%m', Job.completion_time).label('month'),
+        db.func.count(Job.id)
+    ).filter(Job.job_status == 'completed').group_by('month').all()
+    months = [data[0] for data in monthly_data]
+    monthly_completed_jobs = [data[1] for data in monthly_data]
 
     stats = {
         "total_jobs": total_jobs,
         "completed_jobs": completed_jobs,
         "pending_jobs": pending_jobs,
         "technician_names": technician_names,
-        "technician_counts": technician_counts
+        "technician_counts": technician_counts,
+        "months": months,
+        "monthly_completed_jobs": monthly_completed_jobs
     }
 
     return render_template('dashboard.html', stats=stats)
+
 
 # Run the Application
 if __name__ == '__main__':
