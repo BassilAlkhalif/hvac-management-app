@@ -8,16 +8,16 @@
     <style>
         .container {
             max-width: 600px;
-            margin-top: 20px;
+            margin: 30px auto;
         }
-        .form-control {
-            margin-bottom: 15px;
+        h1 {
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center">Create New Job</h1>
+        <h1>Create New Job</h1>
         <form action="/create_job" method="post">
             <div class="mb-3">
                 <label for="customer_name" class="form-label">Customer Name</label>
@@ -27,7 +27,7 @@
                 <label for="job_type" class="form-label">Job Type</label>
                 <select id="job_type" class="form-control" name="job_type">
                     <option value="Maintenance">Maintenance</option>
-                    <option value="Repair">Repair</option>
+                    <option value="Installation">Installation</option>
                 </select>
             </div>
             <div class="mb-3">
@@ -43,4 +43,3 @@
     </div>
 </body>
 </html>
-
